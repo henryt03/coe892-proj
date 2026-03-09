@@ -205,3 +205,34 @@ export async function getOverdueCheckouts() {
 export async function getRecommendations(userId: string) {
   return fetchWithAuth(`/recommendations/${userId}`);
 }
+
+// ============ RATINGS ENDPOINTS ============
+
+export async function createOrUpdateRating(bookId: string, rating: number, review?: string) {
+  return fetchWithAuth('/ratings', {
+    method: 'POST',
+    body: JSON.stringify({ book_id: bookId, rating, review }),
+  });
+}
+
+export async function getBookRatings(bookId: string) {
+  return fetchWithAuth(`/ratings/book/${bookId}`);
+}
+
+export async function getBookAverageRating(bookId: string) {
+  return fetchWithAuth(`/ratings/book/${bookId}/average`);
+}
+
+export async function getMyRatings() {
+  return fetchWithAuth('/ratings/my');
+}
+
+export async function getMyRatingForBook(bookId: string) {
+  return fetchWithAuth(`/ratings/my/${bookId}`);
+}
+
+export async function deleteRating(ratingId: string) {
+  return fetchWithAuth(`/ratings/${ratingId}`, {
+    method: 'DELETE',
+  });
+}

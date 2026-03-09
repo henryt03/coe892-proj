@@ -182,6 +182,16 @@ body {
   background-color: #e2ddd4;
 }
 
+.book-cover.clickable {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book-cover.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.25);
+}
+
 /* book title cell */
 .book-title-cell {
   max-width: 280px;
@@ -190,6 +200,16 @@ body {
 .book-title-cell strong {
   color: #3b2f2f;
   font-size: 16px;
+}
+
+.book-title-link {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.book-title-link:hover {
+  color: #5a3e36;
+  text-decoration: underline;
 }
 
 .book-description {

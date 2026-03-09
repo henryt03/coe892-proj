@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, books, checkouts, reservations, admin, recomendations
+from routes import auth, books, checkouts, reservations, admin, recomendations, ratings
 import uvicorn
 from config.database import connect_db
 
@@ -25,6 +25,7 @@ app.include_router(checkouts.router, prefix="/api/checkouts", tags=["Checkouts"]
 app.include_router(reservations.router, prefix="/api/reservations", tags=["Reservations"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(recomendations.router, prefix="/api/recommendations", tags=["Recommendations"])
+app.include_router(ratings.router, prefix="/api/ratings", tags=["Ratings"])
 
 @app.get("/")
 def root():

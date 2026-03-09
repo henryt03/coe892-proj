@@ -195,6 +195,12 @@ export default function HomePage() {
         {loggedIn && user ? (
           <div className="auth-buttons">
             <span className="user-greeting">Hello, {user.name}</span>
+            <button
+              className="account-button"
+              onClick={() => router.push("/dashboard")}
+            >
+              My Dashboard
+            </button>
             {(user.role === "admin" || user.role === "librarian") && (
               <button
                 className="account-button admin-link"
@@ -263,15 +269,21 @@ export default function HomePage() {
                 <td>
                   <img
                     src={book.cover_image || "/placeholder-book.png"}
-                    className="book-cover"
+                    className="book-cover clickable"
                     alt={book.title}
+                    onClick={() => router.push(`/book/${book._id}`)}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "https://via.placeholder.com/150x240?text=No+Cover";
                     }}
                   />
                 </td>
                 <td className="book-title-cell">
-                  <strong>{book.title}</strong>
+                  <strong
+                    className="book-title-link"
+                    onClick={() => router.push(`/book/${book._id}`)}
+                  >
+                    {book.title}
+                  </strong>
                   {book.description && (
                     <p className="book-description">{book.description}</p>
                   )}
