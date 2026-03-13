@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.user import UserCreate, UserLogin, UserResponse, Token
+from models.user import UserCreate, UserLogin, UserResponse, Token, UserUpdate
 from middleware.auth import hash_password, verify_password, create_access_token, get_current_user
 from config.database import get_db
 from datetime import datetime
 from bson import ObjectId
+from typing import List
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -52,5 +54,21 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    user["_id"] = str(user["_id"])
+    return user
+
+class PreferencesUpdate(BaseModel):
+    preferred_genres: List[str]
+
+@router.put("/preferences", response_model=UserResponse)
+async def update_preferences(prefs: PreferencesUpdate, current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    db.users.update_one(
+        {"_id": ObjectId(current_user["user_id"])},
+        {"$set": {"preferred_genres": prefs.preferred_genres}}
+    )
+    user = db.users.find_one({"_id": ObjectId(current_user["user_id"])})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     user["_id"] = str(user["_id"])
     return user

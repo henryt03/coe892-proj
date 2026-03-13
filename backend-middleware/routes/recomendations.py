@@ -136,3 +136,82 @@ async def get_recommendations(
     )
 
     return recommendations[:10]
+
+
+@router.get("/preferences/{user_id}")
+async def get_preference_recommendations(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get personalized book recommendations based on user's preferred genres.
+
+    Algorithm:
+    1. Fetch user's preferred_genres from database
+    2. Query books in those genres
+    3. Exclude books user has already borrowed/rated
+    4. Sort by average rating
+    5. Return up to 10 recommendations
+    """
+    db = get_db()
+
+    # Get user's preferred genres
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return []
+
+    preferred_genres = user.get("preferred_genres", [])
+    if not preferred_genres:
+        return []
+
+    # Get books user has already interacted with
+    checkouts = list(db.checkouts.find({"user_id": user_id}))
+    checked_out_book_ids = [ObjectId(c["book_id"]) for c in checkouts]
+
+    user_ratings = list(db.ratings.find({"user_id": user_id}))
+    rated_book_ids = [ObjectId(r["book_id"]) for r in user_ratings]
+
+    excluded_ids = list(set(checked_out_book_ids + rated_book_ids))
+
+    # Query books matching user's preferred genres
+    query = {
+        "category": {"$in": preferred_genres},
+        "available_copies": {"$gt": 0}
+    }
+    if excluded_ids:
+        query["_id"] = {"$nin": excluded_ids}
+
+    books = list(db.books.find(query).limit(20))
+
+    recommendations = []
+    for book in books:
+        book_id_str = str(book["_id"])
+        book["_id"] = book_id_str
+
+        # Get average rating for this book
+        pipeline = [
+            {"$match": {"book_id": book_id_str}},
+            {"$group": {
+                "_id": "$book_id",
+                "avg_rating": {"$avg": "$rating"},
+                "num_ratings": {"$sum": 1}
+            }}
+        ]
+        rating_result = list(db.ratings.aggregate(pipeline))
+        if rating_result:
+            book["avg_rating"] = round(rating_result[0]["avg_rating"], 1)
+            book["num_ratings"] = rating_result[0]["num_ratings"]
+        else:
+            book["avg_rating"] = 0
+            book["num_ratings"] = 0
+
+        book["recommendation_reason"] = f"Matches your preference for {book['category']}"
+        recommendations.append(book)
+
+    # Sort by average rating, then by number of ratings
+    recommendations.sort(
+        key=lambda x: (x.get("avg_rating", 0), x.get("num_ratings", 0)),
+        reverse=True
+    )
+
+    return recommendations[:10]

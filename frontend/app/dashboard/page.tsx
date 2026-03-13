@@ -12,6 +12,7 @@ import {
   renewCheckout,
   cancelReservation,
   getBook,
+  updatePreferences,
 } from "@/lib/api";
 import "./dashboard.css";
 
@@ -22,6 +23,7 @@ type User = {
   role: string;
   phone?: string;
   address?: string;
+  preferred_genres?: string[];
 };
 
 type Checkout = {
@@ -60,6 +62,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [savedGenres, setSavedGenres] = useState<string[]>([]);
+  const [prefSaving, setPrefSaving] = useState(false);
+  const [prefMessage, setPrefMessage] = useState("");
+
+  const GENRES = [
+    "Fiction",
+    "Science Fiction",
+    "Mystery",
+    "Non-Fiction",
+    "Technology",
+    "Biography",
+    "Fantasy",
+  ];
 
   const router = useRouter();
 
@@ -78,6 +94,8 @@ export default function DashboardPage() {
       // Load user profile
       const profile = await getProfile();
       setUser(profile);
+      setSelectedGenres(profile.preferred_genres || []);
+      setSavedGenres(profile.preferred_genres || []);
 
       // Load checkouts and reservations in parallel
       const [checkoutsData, reservationsData] = await Promise.all([
@@ -163,6 +181,33 @@ export default function DashboardPage() {
     logout();
     router.push("/login");
   }
+
+  function handleGenreToggle(genre: string) {
+    setSelectedGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
+    );
+    setPrefMessage("");
+  }
+
+  async function handleSavePreferences() {
+    setPrefSaving(true);
+    setPrefMessage("");
+    try {
+      await updatePreferences(selectedGenres);
+      setSavedGenres([...selectedGenres]);
+      setPrefMessage("Preferences saved!");
+    } catch (err) {
+      setPrefMessage(
+        err instanceof Error ? err.message : "Failed to save preferences",
+      );
+    } finally {
+      setPrefSaving(false);
+    }
+  }
+
+  const prefsChanged =
+    JSON.stringify([...selectedGenres].sort()) !==
+    JSON.stringify([...savedGenres].sort());
 
   function getDaysUntilDue(dueDate: string): number {
     const due = new Date(dueDate);
@@ -250,6 +295,48 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Preferences Section */}
+      {user && (
+        <section className="dashboard-section">
+          <h2 className="section-title">My Preferences</h2>
+          <div className="preferences-card">
+            <p className="preferences-label">
+              Select your preferred genres to get personalized recommendations:
+            </p>
+            <div className="genre-chips">
+              {GENRES.map((genre) => (
+                <button
+                  key={genre}
+                  type="button"
+                  className={`genre-chip ${selectedGenres.includes(genre) ? "selected" : ""}`}
+                  onClick={() => handleGenreToggle(genre)}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+            <div className="preferences-actions">
+              {prefsChanged && (
+                <button
+                  className="action-btn save-prefs"
+                  onClick={handleSavePreferences}
+                  disabled={prefSaving}
+                >
+                  {prefSaving ? "Saving..." : "Save Preferences"}
+                </button>
+              )}
+              {prefMessage && (
+                <span
+                  className={`pref-message ${prefMessage.includes("saved") ? "success" : "error"}`}
+                >
+                  {prefMessage}
+                </span>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Active Checkouts Section */}

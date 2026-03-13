@@ -14,7 +14,11 @@ async def checkout_book(
     current_user: dict = Depends(get_current_user)
 ):
     db = get_db()
-    
+
+    # Validate book_id format
+    if not ObjectId.is_valid(checkout.book_id):
+        raise HTTPException(status_code=400, detail="Invalid book ID format")
+
     # Check if book exists and is available
     book = db.books.find_one({"_id": ObjectId(checkout.book_id)})
     if not book:

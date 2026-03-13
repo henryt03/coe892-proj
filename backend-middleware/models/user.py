@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 
@@ -25,6 +25,7 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     active: bool = True
+    preferred_genres: Optional[List[str]] = []
 
 class UserCreate(UserBase):
     password: str
@@ -34,6 +35,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     active: Optional[bool] = None
+    preferred_genres: Optional[List[str]] = None
 
 class UserResponse(UserBase):
     id: str = Field(alias="_id")

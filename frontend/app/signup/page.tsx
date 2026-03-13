@@ -6,6 +6,16 @@ import Link from "next/link";
 import { register } from "@/lib/api";
 import "./signup.css";
 
+const GENRES = [
+  "Fiction",
+  "Science Fiction",
+  "Mystery",
+  "Non-Fiction",
+  "Technology",
+  "Biography",
+  "Fantasy",
+];
+
 export default function Signup() {
   const [currForm, setForm] = useState({
     name: "",
@@ -14,6 +24,7 @@ export default function Signup() {
     phone: "",
     address: "",
     role: "member",
+    preferred_genres: [] as string[],
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,6 +39,15 @@ export default function Signup() {
     setForm({
       ...currForm,
       [name]: value,
+    });
+  };
+
+  const handleGenreChange = (genre: string) => {
+    setForm((prev) => {
+      const genres = prev.preferred_genres.includes(genre)
+        ? prev.preferred_genres.filter((g) => g !== genre)
+        : [...prev.preferred_genres, genre];
+      return { ...prev, preferred_genres: genres };
     });
   };
 
@@ -112,6 +132,48 @@ export default function Signup() {
                   placeholder="Address"
                   onChange={handleChange}
                 />
+              </div>
+
+              <div className="mb-3">
+                <label
+                  className="form-label"
+                  style={{ color: "#7c3aed", fontWeight: 500 }}
+                >
+                  Preferred Genres (for recommendations)
+                </label>
+                <div
+                  className="genre-checkboxes"
+                  style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}
+                >
+                  {GENRES.map((genre) => (
+                    <label
+                      key={genre}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        cursor: "pointer",
+                        padding: "5px 10px",
+                        borderRadius: "20px",
+                        border: currForm.preferred_genres.includes(genre)
+                          ? "2px solid #7c3aed"
+                          : "1px solid #ccc",
+                        background: currForm.preferred_genres.includes(genre)
+                          ? "#f3e8ff"
+                          : "transparent",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={currForm.preferred_genres.includes(genre)}
+                        onChange={() => handleGenreChange(genre)}
+                        style={{ display: "none" }}
+                      />
+                      {genre}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="mb-3">

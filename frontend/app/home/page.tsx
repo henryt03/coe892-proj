@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isLoggedIn, logout, getProfile, getBooks, checkoutBook, reserveBook } from "@/lib/api";
+import {
+  isLoggedIn,
+  logout,
+  getProfile,
+  getBooks,
+  checkoutBook,
+  reserveBook,
+  getPreferenceRecommendations,
+} from "@/lib/api";
 import "./home.css";
 
 // Book type matching your MongoDB schema
@@ -19,6 +27,9 @@ type Book = {
   available_copies: number;
   cover_image?: string;
   created_at: string;
+  recommendation_reason?: string;
+  avg_rating?: number;
+  num_ratings?: number;
 };
 
 type User = {
@@ -26,6 +37,7 @@ type User = {
   name: string;
   email: string;
   role: string;
+  preferred_genres?: string[];
 };
 
 // Available categories from your seeded data
@@ -52,6 +64,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [borrowingId, setBorrowingId] = useState<string | null>(null);
   const [reservingId, setReservingId] = useState<string | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   const router = useRouter();
 
@@ -60,11 +73,16 @@ export default function HomePage() {
     setLoading(true);
     setError("");
     try {
-      const data = await getBooks({
-        search: search || undefined,
-        category: category || undefined,
-      });
-      setBooks(data);
+      if (showRecommendations && user) {
+        const data = await getPreferenceRecommendations(user._id);
+        setBooks(data);
+      } else {
+        const data = await getBooks({
+          search: search || undefined,
+          category: category || undefined,
+        });
+        setBooks(data);
+      }
     } catch (err) {
       setError("Failed to load books. Make sure the backend is running.");
       console.error(err);
@@ -91,15 +109,26 @@ export default function HomePage() {
 
   // Refetch when category changes
   useEffect(() => {
-    fetchBooks();
+    if (!showRecommendations) {
+      fetchBooks();
+    }
   }, [category]);
+
+  // Refetch when recommendations toggle changes
+  useEffect(() => {
+    if (user) {
+      fetchBooks();
+    }
+  }, [showRecommendations]);
 
   // Handle search with debounce
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchBooks();
-    }, 300);
-    return () => clearTimeout(timer);
+    if (!showRecommendations) {
+      const timer = setTimeout(() => {
+        fetchBooks();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
   }, [search]);
 
   // Client-side sorting
@@ -153,7 +182,9 @@ export default function HomePage() {
     setReservingId(book._id);
     try {
       await reserveBook(book._id, user._id);
-      alert(`Successfully reserved "${book.title}"! You'll be notified when it's available.`);
+      alert(
+        `Successfully reserved "${book.title}"! You'll be notified when it's available.`,
+      );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to reserve book");
     } finally {
@@ -169,7 +200,9 @@ export default function HomePage() {
 
   return (
     <div className="library-container">
-      <h1 className="library-title">Library Catalog</h1>
+      <h1 className="library-title">
+        {showRecommendations ? "Recommended For You" : "Library Catalog"}
+      </h1>
 
       <div className="top-bar">
         <div className="search-filters">
@@ -178,11 +211,13 @@ export default function HomePage() {
             placeholder="Search by title or author..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            disabled={showRecommendations}
           />
           <select
             className="category-select"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            disabled={showRecommendations}
           >
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat === "All Categories" ? "" : cat}>
@@ -190,6 +225,24 @@ export default function HomePage() {
               </option>
             ))}
           </select>
+          {loggedIn && user && (
+            <button
+              className={`recommendations-toggle ${showRecommendations ? "active" : ""}`}
+              onClick={() => setShowRecommendations(!showRecommendations)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: showRecommendations ? "2px solid #7c3aed" : "1px solid #ccc",
+                background: showRecommendations ? "#7c3aed" : "white",
+                color: showRecommendations ? "white" : "#333",
+                cursor: "pointer",
+                fontWeight: 500,
+                marginLeft: "10px",
+              }}
+            >
+              {showRecommendations ? "Show All Books" : "For You"}
+            </button>
+          )}
         </div>
 
         {loggedIn && user ? (
@@ -231,16 +284,18 @@ export default function HomePage() {
         )}
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
       {loading ? (
         <div className="loading-message">Loading books...</div>
       ) : sortedBooks.length === 0 ? (
-        <div className="empty-message">No books found matching your search.</div>
+        <div className="empty-message">
+          {showRecommendations
+            ? user?.preferred_genres?.length
+              ? "No recommendations found. Try browsing our full catalog!"
+              : "Set your preferred genres in your profile to get personalized recommendations."
+            : "No books found matching your search."}
+        </div>
       ) : (
         <table className="book-table">
           <thead>
@@ -255,7 +310,10 @@ export default function HomePage() {
               <th onClick={() => handleSort("category")} className="sortable">
                 Category {sortField === "category" && (ascending ? "↑" : "↓")}
               </th>
-              <th onClick={() => handleSort("published_year")} className="sortable">
+              <th
+                onClick={() => handleSort("published_year")}
+                className="sortable"
+              >
                 Year {sortField === "published_year" && (ascending ? "↑" : "↓")}
               </th>
               <th>Availability</th>
@@ -273,7 +331,8 @@ export default function HomePage() {
                     alt={book.title}
                     onClick={() => router.push(`/book/${book._id}`)}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/150x240?text=No+Cover";
+                      (e.target as HTMLImageElement).src =
+                        "https://via.placeholder.com/150x240?text=No+Cover";
                     }}
                   />
                 </td>
@@ -284,6 +343,24 @@ export default function HomePage() {
                   >
                     {book.title}
                   </strong>
+                  {book.recommendation_reason && (
+                    <p
+                      className="recommendation-reason"
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "#7c3aed",
+                        margin: "4px 0",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {book.recommendation_reason}
+                      {book.avg_rating !== undefined && book.avg_rating > 0 && (
+                        <span style={{ marginLeft: "8px" }}>
+                          ({book.avg_rating}/5 from {book.num_ratings} ratings)
+                        </span>
+                      )}
+                    </p>
+                  )}
                   {book.description && (
                     <p className="book-description">{book.description}</p>
                   )}
@@ -294,7 +371,11 @@ export default function HomePage() {
                 </td>
                 <td>{book.published_year || "N/A"}</td>
                 <td>
-                  <span className={book.available_copies > 0 ? "available" : "unavailable"}>
+                  <span
+                    className={
+                      book.available_copies > 0 ? "available" : "unavailable"
+                    }
+                  >
                     {book.available_copies} / {book.total_copies}
                   </span>
                 </td>
@@ -324,7 +405,9 @@ export default function HomePage() {
       )}
 
       <div className="book-count">
-        Showing {sortedBooks.length} book{sortedBooks.length !== 1 ? "s" : ""}
+        {showRecommendations
+          ? `${sortedBooks.length} recommendation${sortedBooks.length !== 1 ? "s" : ""} based on your preferences`
+          : `Showing ${sortedBooks.length} book${sortedBooks.length !== 1 ? "s" : ""}`}
       </div>
     </div>
   );

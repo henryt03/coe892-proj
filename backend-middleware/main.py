@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import auth, books, checkouts, reservations, admin, recomendations, ratings
 import uvicorn
 from config.database import connect_db
+from dotenv import load_dotenv
 
+load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI(title="Library Management API", version="1.0.0")
 
-
-connect_db() #srtting up code to connect to the data base i set upp
+# Connect to MongoDB using the function from config/database.py
+connect_db()
 
 app.add_middleware(
     CORSMiddleware,

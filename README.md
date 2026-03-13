@@ -5,13 +5,26 @@ Email: admin@library.com
 Password: admin123
 
 Setup:
-1. Ensure you create .env
-MONGO_URI= personal connection
-JWT_SECRET= random key
+
+1. Setup .venv (optional but recommended)
+   cd backend-middleware
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -r requirements.txt
+   python.exe -m pip install --upgrade pip
+
+2. Ensure you create .env in 'backend-middleware' folder (check discord for .env file)
+   MONGO_URI= personal connection
+   JWT_SECRET= random key (you can generate from online)
 
 Steps to run:
-# Terminal 1:
-cd backend-middleware && python main.py
 
-# Terminal 2:
-cd frontend && npm run dev
+1. Terminal 1:
+   cd backend-middleware
+   python main.py
+
+2. Terminal 2:
+   cd frontend
+   npm i
+   npm update
+   npm run dev

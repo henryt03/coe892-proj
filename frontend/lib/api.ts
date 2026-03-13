@@ -48,6 +48,7 @@ export async function register(userData: {
   password: string;
   phone?: string;
   address?: string;
+  preferred_genres?: string[];
 }) {
   return fetchWithAuth('/auth/register', {
     method: 'POST',
@@ -71,6 +72,13 @@ export async function login(email: string, password: string) {
 
 export async function getProfile() {
   return fetchWithAuth('/auth/profile');
+}
+
+export async function updatePreferences(preferred_genres: string[]) {
+  return fetchWithAuth('/auth/preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferred_genres }),
+  });
 }
 
 export function logout() {
@@ -204,6 +212,10 @@ export async function getOverdueCheckouts() {
 
 export async function getRecommendations(userId: string) {
   return fetchWithAuth(`/recommendations/${userId}`);
+}
+
+export async function getPreferenceRecommendations(userId: string) {
+  return fetchWithAuth(`/recommendations/preferences/${userId}`);
 }
 
 // ============ RATINGS ENDPOINTS ============

@@ -21,8 +21,8 @@ class CheckoutResponse(CheckoutBase):
     return_date: Optional[datetime] = None
     status: str  # "active", "returned", "overdue"
     renewal_count: int = 0
-    created_at: datetime
-    
+    created_at: Optional[datetime] = None
+
     class Config:
         populate_by_name = True
         json_encoders = {ObjectId: str}
