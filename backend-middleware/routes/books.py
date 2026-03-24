@@ -17,6 +17,8 @@ async def get_books(
     limit: int = 20
 ):
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection is not initialized")
     
     # Build filter
     filter_dict = {}
@@ -33,6 +35,10 @@ async def get_books(
     # Query books
     books = list(db.books.find(filter_dict).skip(skip).limit(limit))
     for book in books:
+        if "created_at" not in book:
+            book["created_at"] = datetime.utcnow()
+        if "updated_at" not in book:
+            book["updated_at"] = book["created_at"]
         book["_id"] = str(book["_id"])
     
     return books
@@ -40,6 +46,8 @@ async def get_books(
 @router.get("/{book_id}", response_model=BookResponse)
 async def get_book(book_id: str):
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection is not initialized")
     
     if not ObjectId.is_valid(book_id):
         raise HTTPException(status_code=400, detail="Invalid book ID")
@@ -48,6 +56,10 @@ async def get_book(book_id: str):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     
+    if "created_at" not in book:
+        book["created_at"] = datetime.utcnow()
+    if "updated_at" not in book:
+        book["updated_at"] = book["created_at"]
     book["_id"] = str(book["_id"])
     return book
 
@@ -57,9 +69,12 @@ async def create_book(
     current_user: dict = Depends(require_role("librarian"))
 ):
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection is not initialized")
     
     book_dict = book.dict()
     book_dict["created_at"] = datetime.utcnow()
+    book_dict["updated_at"] = datetime.utcnow()
     
     result = db.books.insert_one(book_dict)
     created_book = db.books.find_one({"_id": result.inserted_id})
@@ -74,13 +89,17 @@ async def update_book(
     current_user: dict = Depends(require_role("librarian"))
 ):
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection is not initialized")
     
     if not ObjectId.is_valid(book_id):
         raise HTTPException(status_code=400, detail="Invalid book ID")
     
     # Update only provided fields
     update_data = {k: v for k, v in book.dict().items() if v is not None}
-    
+    if update_data:
+        update_data["updated_at"] = datetime.utcnow()
+
     if update_data:
         db.books.update_one({"_id": ObjectId(book_id)}, {"$set": update_data})
     
@@ -88,6 +107,10 @@ async def update_book(
     if not updated_book:
         raise HTTPException(status_code=404, detail="Book not found")
     
+    if "created_at" not in updated_book:
+        updated_book["created_at"] = datetime.utcnow()
+    if "updated_at" not in updated_book:
+        updated_book["updated_at"] = updated_book["created_at"]
     updated_book["_id"] = str(updated_book["_id"])
     return updated_book
 
@@ -97,6 +120,8 @@ async def delete_book(
     current_user: dict = Depends(require_role("admin"))
 ):
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database connection is not initialized")
     
     if not ObjectId.is_valid(book_id):
         raise HTTPException(status_code=400, detail="Invalid book ID")

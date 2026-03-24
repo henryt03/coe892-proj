@@ -40,7 +40,8 @@ async def checkout_book(
         "due_date": datetime.utcnow() + timedelta(days=14),  # 2 weeks
         "return_date": None,
         "status": "active",
-        "renewal_count": 0
+        "renewal_count": 0,
+        "created_at": datetime.utcnow()
     }
     
     result = db.checkouts.insert_one(checkout_dict)

@@ -7,6 +7,13 @@ Setup:
 npm i
 npm install axios
 
+Configure API base URL (optional; defaults to deployed backend):
+
+```bash
+# frontend/.env.local
+NEXT_PUBLIC_API_BASE_URL=https://coe892-proj.onrender.com/api
+```
+
 First, run the development server:
 
 ```bash

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import auth, books, checkouts, reservations, admin, recomendations, ratings
 import uvicorn
 from config.database import connect_db
+import os
 
 
 app = FastAPI(title="Library Management API", version="1.0.0")
@@ -10,9 +11,17 @@ app = FastAPI(title="Library Management API", version="1.0.0")
 
 connect_db() #srtting up code to connect to the data base i set upp
 
+default_origins = "http://localhost:3000,http://127.0.0.1:3000"
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", default_origins).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
