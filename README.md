@@ -29,4 +29,4 @@ Steps to run:
    npm update
    npm run dev
 
-NOTE: The frontend is deployed on vercal @ https://coe892-proj.vercel.app/home, all features can be accessed through that link instead of running locally.
+NOTE: The frontend is deployed on vercel @ https://coe892-proj.vercel.app/home, all features can be accessed through that link instead of running locally.
