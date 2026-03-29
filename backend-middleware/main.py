@@ -14,7 +14,7 @@ connect_db()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://coe892-proj.vercel.app", "https://coe892-proj2-s8cy-5rd7k9i59-asad-kamals-projects.vercel.app/"],
+    allow_origins=["http://localhost:3000", "https://coe892-proj.vercel.app", "https://coe892-proj2-s8cy-5rd7k9i59-asad-kamals-projects.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
